@@ -7,32 +7,44 @@ datasource db {
   url      = "file:./dev.db"
 }
 
+// Definindo as categorias possíveis
+enum Category {
+  ELETRONICOS
+  ROUPAS
+  ACESSORIOS
+  LIVROS
+  JOGOS
+  OUTROS
+}
+
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   name        String
   description String
   price       Float
   stock       Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  OrderItem   OrderItem[]
+  category    Category    @default(OUTROS)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  CartItem    CartItem[]
 }
 
-model Order {
-  id        Int         @id @default(autoincrement())
-  status    String      @default("PENDING") // PENDING, COMPLETED, CANCELLED
-  total     Float
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  items     OrderItem[]
+model Cart {
+  id        Int        @id @default(autoincrement())
+  total     Float      @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  items     CartItem[]
 }
 
-model OrderItem {
-  id        Int     @id @default(autoincrement())
+model CartItem {
+  id        Int      @id @default(autoincrement())
   quantity  Int
   price     Float
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
   productId Int
-  order     Order   @relation(fields: [orderId], references: [id])
-  orderId   Int
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 } 

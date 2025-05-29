@@ -13,11 +13,35 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Product } from './entities/product.entity';
+import { Category } from '@prisma/client';
+import { CategoryValidationPipe } from './pipes/category-validation.pipe';
 
 @ApiTags('products')
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
+
+  @Get('categories')
+  @ApiOperation({ summary: 'Listar todas as categorias disponíveis' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de categorias retornada com sucesso',
+    type: [String],
+  })
+  getCategories() {
+    return Object.values(Category);
+  }
+
+  @Get('category/:category')
+  @ApiOperation({ summary: 'Buscar produtos por categoria' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de produtos da categoria retornada com sucesso',
+    type: [Product],
+  })
+  findByCategory(@Param('category', CategoryValidationPipe) category: Category) {
+    return this.productsService.findByCategory(category);
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -28,7 +52,7 @@ export class ProductsController {
     type: Product,
   })
   create(@Body() createProductDto: CreateProductDto) {
-    return this.productsService.create(createProductDto);
+    return this.productsService.create(createProductDto as Product);
   }
 
   @Get()
