@@ -16,6 +16,7 @@ API completa para e-commerce com autenticação, autorização e gerenciamento d
 - [🌟 Funcionalidades](#-funcionalidades)
 - [🛠️ Tecnologias](#️-tecnologias)
 - [🚀 Começando](#-começando)
+- [👥 Dados Pré-cadastrados](#-dados-pré-cadastrados)
 - [🔑 Autenticação](#-autenticação)
 - [📦 Endpoints](#-endpoints)
 - [🔒 Níveis de Acesso](#-níveis-de-acesso)
@@ -83,6 +84,9 @@ API completa para e-commerce com autenticação, autorização e gerenciamento d
 
    # Gere o cliente Prisma
    npx prisma generate
+
+   # Execute o seed para criar dados iniciais
+   npm run seed
    ```
 
 4. **Inicie o servidor**
@@ -93,6 +97,32 @@ API completa para e-commerce com autenticação, autorização e gerenciamento d
 
 5. **Acesse a documentação**
    - http://localhost:3000/api
+
+## 👥 Dados Pré-cadastrados
+
+O sistema vem com dados pré-cadastrados para facilitar os testes:
+
+### 👑 Usuário Admin
+
+- **Email**: admin@rocketlab.com
+- **Senha**: admin123
+- **Função**: Administrador
+
+### 👤 Usuário Comum
+
+- **Email**: user@rocketlab.com
+- **Senha**: user123
+- **Função**: Cliente
+
+### 📦 Produtos
+
+O sistema já vem com 8 produtos cadastrados em diferentes categorias:
+
+- Eletrônicos (MacBook, Fone, Mouse, etc)
+- Roupas (Camiseta Rocket)
+- Livros (Clean Code)
+- Jogos (Zelda: TOTK)
+- Acessórios (Mochila)
 
 ## 🔑 Autenticação
 
