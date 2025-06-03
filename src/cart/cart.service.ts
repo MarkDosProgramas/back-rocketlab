@@ -9,9 +9,9 @@ export class CartService {
     private productsService: ProductsService,
   ) {}
 
-  private async getOrCreateCart() {
-    // Buscar o primeiro carrinho ou criar um novo se não existir
-    const cart = await this.prisma.cart.findFirst({
+  private async getOrCreateCart(userId: number) {
+    const cart = await this.prisma.cart.findUnique({
+      where: { userId },
       include: {
         items: {
           include: {
@@ -28,6 +28,7 @@ export class CartService {
     return this.prisma.cart.create({
       data: {
         total: 0,
+        userId,
       },
       include: {
         items: {
@@ -39,7 +40,7 @@ export class CartService {
     });
   }
 
-  async addItem(productId: number, quantity: number) {
+  async addItem(userId: number, productId: number, quantity: number) {
     if (quantity <= 0) {
       throw new BadRequestException('A quantidade deve ser maior que zero');
     }
@@ -52,13 +53,11 @@ export class CartService {
       );
     }
 
-    const cart = await this.getOrCreateCart();
+    const cart = await this.getOrCreateCart(userId);
 
-    // Verificar se o produto já está no carrinho
     const existingItem = cart.items.find((item) => item.productId === productId);
 
     if (existingItem) {
-      // Atualizar quantidade do item existente
       const newQuantity = existingItem.quantity + quantity;
 
       if (product.stock < newQuantity) {
@@ -72,7 +71,6 @@ export class CartService {
         data: { quantity: newQuantity },
       });
     } else {
-      // Adicionar novo item
       await this.prisma.cartItem.create({
         data: {
           quantity,
@@ -83,18 +81,20 @@ export class CartService {
       });
     }
 
-    // Atualizar estoque do produto
     await this.productsService.update(productId, {
       stock: product.stock - quantity,
     });
 
-    // Recalcular total e retornar carrinho atualizado
     return this.recalculateCart(cart.id);
   }
 
-  async removeItem(itemId: number) {
-    const cartItem = await this.prisma.cartItem.findUnique({
-      where: { id: itemId },
+  async removeItem(userId: number, itemId: number) {
+    const cart = await this.getOrCreateCart(userId);
+    const cartItem = await this.prisma.cartItem.findFirst({
+      where: {
+        id: itemId,
+        cartId: cart.id,
+      },
       include: { product: true },
     });
 
@@ -102,31 +102,32 @@ export class CartService {
       throw new NotFoundException(`Item ${itemId} não encontrado no carrinho`);
     }
 
-    // Restaurar estoque do produto
     await this.productsService.update(cartItem.productId, {
       stock: cartItem.product.stock + cartItem.quantity,
     });
 
-    // Remover item
     await this.prisma.cartItem.delete({
       where: { id: itemId },
     });
 
-    // Recalcular total e retornar carrinho atualizado
-    return this.recalculateCart(cartItem.cartId);
+    return this.recalculateCart(cart.id);
   }
 
-  async updateItemQuantity(itemId: number, quantity: number) {
+  async updateItemQuantity(userId: number, itemId: number, quantity: number) {
     if (quantity < 0) {
       throw new BadRequestException('A quantidade não pode ser negativa');
     }
 
     if (quantity === 0) {
-      return this.removeItem(itemId);
+      return this.removeItem(userId, itemId);
     }
 
-    const cartItem = await this.prisma.cartItem.findUnique({
-      where: { id: itemId },
+    const cart = await this.getOrCreateCart(userId);
+    const cartItem = await this.prisma.cartItem.findFirst({
+      where: {
+        id: itemId,
+        cartId: cart.id,
+      },
       include: { product: true },
     });
 
@@ -142,25 +143,21 @@ export class CartService {
       );
     }
 
-    // Atualizar quantidade do item
     await this.prisma.cartItem.update({
       where: { id: itemId },
       data: { quantity },
     });
 
-    // Atualizar estoque do produto
     await this.productsService.update(cartItem.productId, {
       stock: cartItem.product.stock - stockDifference,
     });
 
-    // Recalcular total e retornar carrinho atualizado
-    return this.recalculateCart(cartItem.cartId);
+    return this.recalculateCart(cart.id);
   }
 
-  async clearCart() {
-    const cart = await this.getOrCreateCart();
+  async clearCart(userId: number) {
+    const cart = await this.getOrCreateCart(userId);
 
-    // Restaurar estoque dos produtos
     for (const item of cart.items) {
       const product = await this.productsService.findOne(item.productId);
       await this.productsService.update(item.productId, {
@@ -168,17 +165,15 @@ export class CartService {
       });
     }
 
-    // Remover todos os itens
     await this.prisma.cartItem.deleteMany({
       where: { cartId: cart.id },
     });
 
-    // Retornar carrinho vazio
     return this.recalculateCart(cart.id);
   }
 
-  async getCart() {
-    return this.getOrCreateCart();
+  async getCart(userId: number) {
+    return this.getOrCreateCart(userId);
   }
 
   private async recalculateCart(cartId: number) {
@@ -212,14 +207,13 @@ export class CartService {
     });
   }
 
-  async checkout() {
-    const cart = await this.getOrCreateCart();
+  async checkout(userId: number) {
+    const cart = await this.getOrCreateCart(userId);
 
     if (cart.items.length === 0) {
       throw new BadRequestException('O carrinho está vazio');
     }
 
-    // Calcular o total e preparar os itens para a resposta
     const purchaseItems = cart.items.map((item) => ({
       productName: item.product.name,
       quantity: item.quantity,
@@ -229,7 +223,6 @@ export class CartService {
 
     const total = purchaseItems.reduce((sum, item) => sum + item.subtotal, 0);
 
-    // Criar o objeto de resposta
     const response = {
       total,
       purchaseDate: new Date(),
@@ -237,12 +230,10 @@ export class CartService {
       message: 'Compra finalizada com sucesso!',
     };
 
-    // Limpar o carrinho após a finalização da compra
     await this.prisma.cartItem.deleteMany({
       where: { cartId: cart.id },
     });
 
-    // Atualizar o total do carrinho para zero
     await this.prisma.cart.update({
       where: { id: cart.id },
       data: { total: 0 },
