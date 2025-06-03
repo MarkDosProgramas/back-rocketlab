@@ -1,33 +1,47 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsNumber, IsEnum, Min, IsOptional } from 'class-validator';
 import { Category } from '@prisma/client';
-import { IsString, IsNumber, IsPositive, IsEnum, IsNotEmpty } from 'class-validator';
 
 export class CreateProductDto {
-  @ApiProperty({ description: 'Nome do produto' })
+  @ApiProperty({
+    example: 'iPhone 13',
+    description: 'The name of the product',
+  })
   @IsString()
-  @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ description: 'Descrição do produto' })
+  @ApiProperty({
+    example: 'Latest iPhone model with A15 Bionic chip',
+    description: 'Detailed description of the product',
+  })
   @IsString()
-  @IsNotEmpty()
   description: string;
 
-  @ApiProperty({ description: 'Preço do produto' })
+  @ApiProperty({
+    example: 999.99,
+    description: 'The price of the product',
+    minimum: 0,
+  })
   @IsNumber()
-  @IsPositive()
+  @Min(0)
   price: number;
 
-  @ApiProperty({ description: 'Quantidade em estoque' })
+  @ApiProperty({
+    example: 100,
+    description: 'The available stock quantity',
+    minimum: 0,
+  })
   @IsNumber()
-  @IsPositive()
+  @Min(0)
   stock: number;
 
-  @ApiProperty({
-    description: 'Categoria do produto',
+  @ApiPropertyOptional({
     enum: Category,
     default: Category.OUTROS,
+    example: Category.ELETRONICOS,
+    description: 'The category of the product',
   })
   @IsEnum(Category)
+  @IsOptional()
   category?: Category;
 }

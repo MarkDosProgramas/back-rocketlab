@@ -8,106 +8,210 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
+  UseGuards,
+  Logger,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { Product } from './entities/product.entity';
 import { Category } from '@prisma/client';
 import { CategoryValidationPipe } from './pipes/category-validation.pipe';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '@prisma/client';
+import { Public } from '../auth/decorators/public.decorator';
 
-@ApiTags('products')
+@ApiTags('Products')
 @Controller('products')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth('access-token')
 export class ProductsController {
+  private readonly logger = new Logger(ProductsController.name);
+
   constructor(private readonly productsService: ProductsService) {}
 
+  @Public()
   @Get('categories')
-  @ApiOperation({ summary: 'Listar todas as categorias disponíveis' })
+  @ApiOperation({
+    summary: 'List all categories',
+    description: 'Returns a list of all available product categories',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Lista de categorias retornada com sucesso',
-    type: [String],
+    description: 'Categories list returned successfully',
+    schema: {
+      type: 'array',
+      items: {
+        enum: Object.values(Category),
+        example: ['ELETRONICOS', 'ROUPAS', 'ACESSORIOS', 'LIVROS', 'JOGOS', 'OUTROS'],
+      },
+    },
   })
   getCategories() {
     return Object.values(Category);
   }
 
+  @Public()
   @Get('category/:category')
-  @ApiOperation({ summary: 'Buscar produtos por categoria' })
+  @ApiOperation({
+    summary: 'Get products by category',
+    description: 'Returns all products in a specific category',
+  })
+  @ApiParam({
+    name: 'category',
+    enum: Category,
+    description: 'The category to filter products by',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Lista de produtos da categoria retornada com sucesso',
+    description: 'Products list returned successfully',
     type: [Product],
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid category',
   })
   findByCategory(@Param('category', CategoryValidationPipe) category: Category) {
     return this.productsService.findByCategory(category);
   }
 
   @Post()
+  @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Criar um novo produto' })
+  @ApiOperation({
+    summary: 'Create product',
+    description: 'Creates a new product (Admin only)',
+  })
   @ApiResponse({
     status: 201,
-    description: 'Produto criado com sucesso',
+    description: 'Product created successfully',
     type: Product,
   })
-  create(@Body() createProductDto: CreateProductDto) {
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Not logged in',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Not an admin',
+  })
+  async create(@Body() createProductDto: CreateProductDto) {
+    this.logger.debug(`Creating product: ${JSON.stringify(createProductDto)}`);
     return this.productsService.create(createProductDto as Product);
   }
 
+  @Public()
   @Get()
-  @ApiOperation({ summary: 'Listar todos os produtos' })
+  @ApiOperation({
+    summary: 'List all products',
+    description: 'Returns a list of all products in the store',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Lista de produtos retornada com sucesso',
+    description: 'Products list returned successfully',
     type: [Product],
   })
   findAll() {
     return this.productsService.findAll();
   }
 
+  @Public()
   @Get(':id')
-  @ApiOperation({ summary: 'Buscar um produto pelo ID' })
+  @ApiOperation({
+    summary: 'Get product by ID',
+    description: 'Returns a single product by its ID',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The ID of the product',
+    type: 'number',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Produto encontrado com sucesso',
+    description: 'Product found successfully',
     type: Product,
   })
   @ApiResponse({
     status: 404,
-    description: 'Produto não encontrado',
+    description: 'Product not found',
   })
   async findOne(@Param('id') id: string) {
     return this.productsService.findOne(+id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Atualizar um produto' })
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: 'Update product',
+    description: 'Updates an existing product (Admin only)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The ID of the product to update',
+    type: 'number',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Produto atualizado com sucesso',
+    description: 'Product updated successfully',
     type: Product,
   })
   @ApiResponse({
-    status: 404,
-    description: 'Produto não encontrado',
+    status: 400,
+    description: 'Bad Request - Invalid data',
   })
-  update(@Param('id') id: string, @Body() updateProductDto: CreateProductDto) {
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Not logged in',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Not an admin',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Product not found',
+  })
+  async update(@Param('id') id: string, @Body() updateProductDto: CreateProductDto) {
+    this.logger.debug(`Updating product ${id}: ${JSON.stringify(updateProductDto)}`);
     return this.productsService.update(+id, updateProductDto);
   }
 
   @Delete(':id')
+  @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Remover um produto' })
+  @ApiOperation({
+    summary: 'Delete product',
+    description: 'Deletes an existing product (Admin only)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The ID of the product to delete',
+    type: 'number',
+  })
   @ApiResponse({
     status: 204,
-    description: 'Produto removido com sucesso',
+    description: 'Product deleted successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Not logged in',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Not an admin',
   })
   @ApiResponse({
     status: 404,
-    description: 'Produto não encontrado',
+    description: 'Product not found',
   })
-  remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string) {
+    this.logger.debug(`Deleting product ${id}`);
     return this.productsService.remove(+id);
   }
 }

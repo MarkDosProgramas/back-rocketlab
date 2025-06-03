@@ -1,38 +1,67 @@
-# 🚀 Sistema de Compras Online
+# 🛍️ Rocketlab Store API
 
-Bem-vindo ao nosso sistema de compras online! Esta é uma API robusta e moderna construída com as melhores práticas de desenvolvimento.
+<div align="center">
 
-## 💻 Tecnologias
+![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
+![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)
 
-- **NestJS**: Framework Node.js para construção de APIs escaláveis
-- **TypeScript**: Superset JavaScript que adiciona tipagem estática
-- **Prisma**: ORM moderno para Node.js e TypeScript
-- **SQLite**: Banco de dados leve e eficiente
-- **Swagger**: Documentação interativa da API
+API completa para e-commerce com autenticação, autorização e gerenciamento de produtos e carrinho.
 
-## ✨ Funcionalidades
+</div>
 
-### Produtos
+## 📑 Índice
 
-- Criar, listar, atualizar e deletar produtos
-- Controle automático de estoque
-- Validação de preços e quantidades
+- [🌟 Funcionalidades](#-funcionalidades)
+- [🛠️ Tecnologias](#️-tecnologias)
+- [🚀 Começando](#-começando)
+- [🔑 Autenticação](#-autenticação)
+- [📦 Endpoints](#-endpoints)
+- [🔒 Níveis de Acesso](#-níveis-de-acesso)
+- [💡 Exemplos](#-exemplos)
 
-### Carrinho de Compras
+## 🌟 Funcionalidades
 
-- Carrinho único e persistente
-- Adicionar produtos ao carrinho
-- Atualizar quantidade de itens
-- Remover itens específicos
-- Limpar carrinho completo
+### 🛒 Carrinho de Compras
+
+- Carrinho individual por usuário
+- Adição/remoção de produtos
+- Atualização de quantidades
+- Checkout completo
 - Cálculo automático de totais
-- Validações automáticas:
-  - Estoque disponível
-  - Preços válidos
-  - Quantidades positivas
-  - Produtos existentes
 
-## 🚀 Como Rodar o Projeto
+### 📦 Produtos
+
+- CRUD completo de produtos
+- Categorização
+- Controle de estoque
+- Validações automáticas
+
+### 👥 Usuários
+
+- Registro e autenticação
+- Perfis de usuário e admin
+- JWT para segurança
+- Proteção de rotas
+
+## 🛠️ Tecnologias
+
+- **NestJS**: Framework backend moderno
+- **TypeScript**: Tipagem estática e segurança
+- **Prisma**: ORM para banco de dados
+- **SQLite**: Banco de dados relacional
+- **JWT**: Autenticação segura
+- **Swagger**: Documentação interativa
+
+## 🚀 Começando
+
+### Pré-requisitos
+
+- Node.js 18+
+- npm, yarn ou pnpm
+
+### Instalação
 
 1. **Clone o repositório**
 
@@ -46,10 +75,14 @@ Bem-vindo ao nosso sistema de compras online! Esta é uma API robusta e moderna 
    npm install
    ```
 
-3. **Configure o banco de dados**
+3. **Configure o ambiente**
 
    ```bash
+   # Crie o banco de dados e execute as migrações
    npx prisma migrate dev
+
+   # Gere o cliente Prisma
+   npx prisma generate
    ```
 
 4. **Inicie o servidor**
@@ -59,21 +92,75 @@ Bem-vindo ao nosso sistema de compras online! Esta é uma API robusta e moderna 
    ```
 
 5. **Acesse a documentação**
-   - Abra seu navegador
-   - Acesse: http://localhost:3000/api
-   - Você verá a interface do Swagger com todos os endpoints
+   - http://localhost:3000/api
 
-## 📝 Exemplos de Uso
+## 🔑 Autenticação
 
-### Criar um Produto
+### Registro
+
+```http
+POST /auth/register
+{
+  "name": "Usuário Teste",
+  "email": "usuario@teste.com",
+  "password": "senha123"
+}
+```
+
+### Login
+
+```http
+POST /auth/login
+{
+  "email": "usuario@teste.com",
+  "password": "senha123"
+}
+```
+
+## 📦 Endpoints
+
+### Produtos
+
+- `GET /products` - Lista todos os produtos
+- `GET /products/:id` - Detalhes de um produto
+- `POST /products` - Cria produto (Admin)
+- `PATCH /products/:id` - Atualiza produto (Admin)
+- `DELETE /products/:id` - Remove produto (Admin)
+
+### Carrinho
+
+- `GET /cart` - Ver carrinho atual
+- `POST /cart/items` - Adicionar item
+- `PATCH /cart/items/:id` - Atualizar quantidade
+- `DELETE /cart/items/:id` - Remover item
+- `POST /cart/checkout` - Finalizar compra
+
+## 🔒 Níveis de Acesso
+
+### 👤 Usuário Comum
+
+- Ver produtos
+- Gerenciar próprio carrinho
+- Realizar compras
+
+### 👑 Administrador
+
+- Tudo do usuário comum
+- Gerenciar produtos
+- Criar/editar/remover produtos
+
+## 💡 Exemplos
+
+### Adicionar Produto (Admin)
 
 ```http
 POST /products
 {
-  "name": "Produto Legal",
-  "description": "Uma descrição incrível",
-  "price": 99.99,
-  "stock": 10
+  "name": "Notebook Gamer",
+  "description": "Notebook para jogos de última geração",
+  "price": 5999.99,
+  "stock": 10,
+  "category": "ELETRONICOS"
 }
 ```
 
@@ -83,51 +170,35 @@ POST /products
 POST /cart/items
 {
   "productId": 1,
-  "quantity": 2
+  "quantity": 1
 }
 ```
 
-### Atualizar Quantidade no Carrinho
+### Checkout
 
 ```http
-PATCH /cart/items/{itemId}
-{
-  "quantity": 3
-}
+POST /cart/checkout
 ```
 
-### Remover Item do Carrinho
+## 🔍 Ferramentas de Desenvolvimento
 
-```http
-DELETE /cart/items/{itemId}
-```
+### Prisma Studio
 
-### Limpar Carrinho
-
-```http
-DELETE /cart/clear
-```
-
-### Ver Carrinho Atual
-
-```http
-GET /cart
-```
-
-## ⚠️ Validações e Mensagens de Erro
-
-O sistema inclui diversas validações para garantir a integridade dos dados:
-
-- Produtos com estoque zerado não podem ser adicionados ao carrinho
-- Quantidades negativas não são permitidas
-- Preços devem ser maiores que zero
-- Validação automática de estoque disponível
-- Mensagens de erro claras e informativas
-
-## 🔍 Monitoramento
-
-Você pode visualizar o banco de dados usando o Prisma Studio:
+Visualize e edite dados do banco:
 
 ```bash
 npx prisma studio
 ```
+
+### Swagger UI
+
+Teste a API e veja a documentação:
+
+- http://localhost:3000/api
+
+## 📝 Notas
+
+- Todos os endpoints autenticados requerem o token JWT no header
+- Mantenha suas credenciais seguras
+
+---

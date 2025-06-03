@@ -1,21 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsPositive } from 'class-validator';
+import { IsNumber, Min } from 'class-validator';
 
 export class AddItemDto {
   @ApiProperty({
-    description: 'ID do produto a ser adicionado',
     example: 1,
+    description: 'The ID of the product to add to the cart',
   })
-  @IsInt({ message: 'O ID do produto deve ser um número inteiro' })
-  @IsPositive({ message: 'O ID do produto deve ser positivo' })
+  @IsNumber()
   productId: number;
 
   @ApiProperty({
-    description: 'Quantidade do produto',
     example: 1,
+    description: 'The quantity of the product to add',
     minimum: 1,
   })
-  @IsInt({ message: 'A quantidade deve ser um número inteiro' })
-  @IsPositive({ message: 'A quantidade deve ser positiva' })
+  @IsNumber()
+  @Min(1)
   quantity: number;
 }
